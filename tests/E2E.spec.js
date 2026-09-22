@@ -8,8 +8,9 @@ test('E2E', async ({ page }) => {
 
   const products = page.locator('.card-body');
   const productName = 'ZARA COAT 3';
+  const email = 'yadrajshinde1@gmail.com';
 
-  await page.locator('#userEmail').fill('yadrajshinde1@gmail.com');
+  await page.locator('#userEmail').fill(email);
   await page.locator('#userPassword').fill('Yadgodtes@123456');
   await page.locator('#login').click();
 
@@ -47,8 +48,25 @@ test('E2E', async ({ page }) => {
         }
     }
 
-    await page.pause();
-  
+    await expect(page.locator('.user__name [type="text"]').first()).toHaveText(email);
+    await page.locator('.action__submit').click();
+    await expect(page.locator('.hero-primary')).toHaveText(' Thankyou for the order. ');
+    const order_id = await page.locator('.em-spacer-1 label').last().textContent();
+    console.log(order_id);
 
-  
+    await page.locator('button[routerlink*="myorders"]').click();
+    await page.locator('tbody').waitFor();
+    const rows = page.locator('tbody tr');
+    for (let i = 0; i < await rows.count(); ++i) {
+      const text = await rows.nth(i).locator('th').textContent();
+      if (order_id.includes(text)) {
+        await rows.nth(i).locator('button').first().click();
+        break;
+      }
+    }
+
+    const orderDetails = await page.locator('.col-text').textContent();
+    expect(order_id.includes(orderDetails)).toBeTruthy();
+
 }); 
+
