@@ -23,7 +23,6 @@ test("Test1", async ({ browser }) => {
   console.log(email);
 
   await username.fill(email);
-  
-  console.log("Main page value: " + await username.inputValue());
 
+  console.log("Main page value: " + (await username.inputValue()));
 });
