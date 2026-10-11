@@ -1,74 +1,43 @@
 const { test, expect } = require("@playwright/test");
+const { Loginpage } = require("../pageObjects/Loginpage");
+const { DashboardPage } = require("../pageObjects/DashboardPage");
+const { CheckoutPage } = require("../pageObjects/CheckoutPage");
+const { CartPage } = require("../pageObjects/CartPage");
+const { OrderHistoryPage } = require("../pageObjects/OrderHistoryPage");
+const { MyOrdersPage } = require("../pageObjects/MyOrdersPage");
+const { OrderSummaryPage } = require("../pageObjects/OrderSummaryPage");
 
 test("E2E", async ({ page }) => {
-  await page.goto("https://rahulshettyacademy.com/client/#/auth/login");
-  console.log(await page.title());
-
-  const products = page.locator(".card-body");
   const productName = "ZARA COAT 3";
   const email = "yadrajshinde1@gmail.com";
+  const password = "Yadgodtes@123456";
 
-  await page.locator("#userEmail").fill(email);
-  await page.locator("#userPassword").fill("Yadgodtes@123456");
-  await page.locator("#login").click();
-
-  await page.waitForLoadState("networkidle");
+  const loginPage = new Loginpage(page);
+  await loginPage.goTo();
+  await loginPage.Login(email, password);
   //await page.locator('.card-body b').first().waitFor();
-  console.log(await page.locator(".card-body b").allTextContents());
-  console.log(await products.count());
-  const count = await products.count();
+  const dashboardPage = new DashboardPage(page);
+  await dashboardPage.AddProductToCart(productName);
+  await dashboardPage.NavigateToCart();
 
-  for (let i = 0; i < count; ++i) {
-    if ((await products.nth(i).locator("b").textContent()) === productName) {
-      await products.nth(i).locator("text= Add To Cart").click();
-      break;
-    }
-  }
+  //explicit wait
+  const cartPage = new CartPage(page);
+  await cartPage.ValidateProductInCart();
+  await cartPage.NavigateToCheckout();
 
-  await page.locator('[routerlink*="cart"]').click();
-  await page.locator("div li").first().waitFor(); //explicit wait
-  const bool = await page.locator('h3:has-text("ZARA COAT 3")').isVisible();
-  console.log(bool);
-  expect(bool).toBeTruthy();
+  const checkoutPage = new CheckoutPage(page);
+  await checkoutPage.validateEmail(email);
+  await checkoutPage.SelectCountry();
+  await checkoutPage.PlaceOrder();
 
-  await page.locator("text=Checkout").click();
-  await page.locator('[placeholder*="Country"]').pressSequentially("ind");
-  const dropdown = page.locator(".ta-results");
-  await dropdown.waitFor();
-  const optionsCount = await dropdown.locator("button").count();
+  const orderHistoryPage = new OrderHistoryPage(page);
+  const order_id = await orderHistoryPage.ValidateOrderId();
+  await orderHistoryPage.ValidateThankYouMessage();
+  await orderHistoryPage.NavigateToMyOrders();
 
-  for (let i = 0; i < optionsCount; ++i) {
-    const text = await dropdown.locator("button").nth(i).textContent();
-    if (text === " India") {
-      await dropdown.locator("button").nth(i).click();
-      break;
-    }
-  }
+  const myOrdersPage = new MyOrdersPage(page);
+  await myOrdersPage.clickOnViewButton(order_id);
 
-  await expect(page.locator('.user__name [type="text"]').first()).toHaveText(
-    email,
-  );
-  await page.locator(".action__submit").click();
-  await expect(page.locator(".hero-primary")).toHaveText(
-    " Thankyou for the order. ",
-  );
-  const order_id = await page
-    .locator(".em-spacer-1 label")
-    .last()
-    .textContent();
-  console.log(order_id);
-
-  await page.locator('button[routerlink*="myorders"]').click();
-  await page.locator("tbody").waitFor();
-  const rows = page.locator("tbody tr");
-  for (let i = 0; i < (await rows.count()); ++i) {
-    const text = await rows.nth(i).locator("th").textContent();
-    if (order_id.includes(text)) {
-      await rows.nth(i).locator("button").first().click();
-      break;
-    }
-  }
-
-  const orderDetails = await page.locator(".col-text").textContent();
-  expect(order_id.includes(orderDetails)).toBeTruthy();
+  const orderSummaryPage = new OrderSummaryPage(page);
+  await orderSummaryPage.ValidateOrderId(order_id);
 });
