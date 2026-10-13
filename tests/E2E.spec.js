@@ -1,43 +1,76 @@
 const { test, expect } = require("@playwright/test");
-const { Loginpage } = require("../pageObjects/Loginpage");
-const { DashboardPage } = require("../pageObjects/DashboardPage");
-const { CheckoutPage } = require("../pageObjects/CheckoutPage");
-const { CartPage } = require("../pageObjects/CartPage");
-const { OrderHistoryPage } = require("../pageObjects/OrderHistoryPage");
-const { MyOrdersPage } = require("../pageObjects/MyOrdersPage");
-const { OrderSummaryPage } = require("../pageObjects/OrderSummaryPage");
+const { POManager } = require("../pageObjects/POManager");
+const dataset = JSON.parse(
+  JSON.stringify(require("../Utils/E2ETestData.json")),
+);
+const { customTest } = require("../Utils/CustomTest");
 
-test("E2E", async ({ page }) => {
-  const productName = "ZARA COAT 3";
-  const email = "yadrajshinde1@gmail.com";
-  const password = "Yadgodtes@123456";
+for (const data of dataset) {
+  test(`E2E - ${data.productName}`, async ({ page }) => {
+    const poManager = new POManager(page);
 
-  const loginPage = new Loginpage(page);
-  await loginPage.goTo();
-  await loginPage.Login(email, password);
-  //await page.locator('.card-body b').first().waitFor();
-  const dashboardPage = new DashboardPage(page);
-  await dashboardPage.AddProductToCart(productName);
-  await dashboardPage.NavigateToCart();
+    const loginPage = poManager.getLoginPage();
+    await loginPage.goTo();
+    await loginPage.Login(data.email, data.password);
 
-  //explicit wait
-  const cartPage = new CartPage(page);
-  await cartPage.ValidateProductInCart();
-  await cartPage.NavigateToCheckout();
+    //await page.locator('.card-body b').first().waitFor();
+    const dashboardPage = poManager.getDashboardPage();
+    await dashboardPage.AddProductToCart(data.productName);
+    await dashboardPage.NavigateToCart();
 
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.validateEmail(email);
-  await checkoutPage.SelectCountry();
-  await checkoutPage.PlaceOrder();
+    //explicit wait
+    const cartPage = poManager.getCartPage();
+    await cartPage.ValidateProductInCart(data.productName);
+    await cartPage.NavigateToCheckout();
 
-  const orderHistoryPage = new OrderHistoryPage(page);
-  const order_id = await orderHistoryPage.ValidateOrderId();
-  await orderHistoryPage.ValidateThankYouMessage();
-  await orderHistoryPage.NavigateToMyOrders();
+    const checkoutPage = poManager.getCheckoutPage();
+    await checkoutPage.validateEmail(data.email);
+    await checkoutPage.SelectCountry();
+    await checkoutPage.PlaceOrder();
 
-  const myOrdersPage = new MyOrdersPage(page);
-  await myOrdersPage.clickOnViewButton(order_id);
+    const orderHistoryPage = poManager.getOrderHistoryPage();
+    const order_id = await orderHistoryPage.ValidateOrderId();
+    await orderHistoryPage.ValidateThankYouMessage();
+    await orderHistoryPage.NavigateToMyOrders();
 
-  const orderSummaryPage = new OrderSummaryPage(page);
-  await orderSummaryPage.ValidateOrderId(order_id);
-});
+    const myOrdersPage = poManager.getMyOrdersPage();
+    await myOrdersPage.clickOnViewButton(order_id);
+
+    const orderSummaryPage = poManager.getOrderSummaryPage();
+    await orderSummaryPage.ValidateOrderId(order_id);
+  });
+
+  customTest.only(`Verify login using custom test data fixture- ${data.productName}`, async ({ page, testDataCustom }) => {
+    const poManager = new POManager(page);
+
+    const loginPage = poManager.getLoginPage();
+    await loginPage.goTo();
+    await loginPage.Login(testDataCustom.email, testDataCustom.password);
+
+    //await page.locator('.card-body b').first().waitFor();
+    const dashboardPage = poManager.getDashboardPage();
+    await dashboardPage.AddProductToCart(testDataCustom.productName);
+    await dashboardPage.NavigateToCart();
+
+    //explicit wait
+    const cartPage = poManager.getCartPage();
+    await cartPage.ValidateProductInCart(testDataCustom.productName);
+    await cartPage.NavigateToCheckout();
+
+    const checkoutPage = poManager.getCheckoutPage();
+    await checkoutPage.validateEmail(testDataCustom.email);
+    await checkoutPage.SelectCountry();
+    await checkoutPage.PlaceOrder();
+
+    const orderHistoryPage = poManager.getOrderHistoryPage();
+    const order_id = await orderHistoryPage.ValidateOrderId();
+    await orderHistoryPage.ValidateThankYouMessage();
+    await orderHistoryPage.NavigateToMyOrders();
+
+    const myOrdersPage = poManager.getMyOrdersPage();
+    await myOrdersPage.clickOnViewButton(order_id);
+
+    const orderSummaryPage = poManager.getOrderSummaryPage();
+    await orderSummaryPage.ValidateOrderId(order_id);
+  });
+}

@@ -1,4 +1,4 @@
-class Loginpage {
+class LoginPage {
   constructor(page) {
     this.page = page;
     this.userEmail = page.locator("#userEmail");
@@ -18,4 +18,4 @@ class Loginpage {
   }
 }
 
-module.exports = { Loginpage };
+module.exports = { LoginPage };
